@@ -40,6 +40,20 @@ class NOAAWeatherManager(Client):
         response = self.get(path, params=params)
         return response
 
+    def fetch_station(self, id: str = None) -> dict:
+        """Fetches a station based on id
+
+        Args:
+            id (str, optional): The station ID. Defaults to None.
+
+        Returns:
+            dict: A dictionary containing the station information.
+        """
+
+        path = f"/stations/{id}"
+        response = self.get(path)
+        return response
+
     def fetch_stations(
         self, id: str = None, state: str = None, limit: int = 500, cursor: str = None
     ) -> dict:

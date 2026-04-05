@@ -3,12 +3,14 @@ import uuid
 
 from flask import Flask, request
 
-from src import extract, load, settings
+from src.bronze_noaa_station import extract, load, settings
 from src.logging.custom_logger import get_logger
 from src.managers.bigquery_manager import BigQueryManager
+from src.managers.noaa_api_manager import NOAAWeatherManager
 
 logger = get_logger()
 bigquery_manager = BigQueryManager(project=settings.PROJECT, dataset=settings.DATASET)
+noaa_manager = NOAAWeatherManager()
 
 app = Flask(__name__)
 
@@ -41,8 +43,14 @@ def main(test_payload: dict = None):
         for station_id in data["station_ids"]:
             logger.info(f"Extracting observations for station: {station_id}")
             noaa_response = extract.extract_noaa_observations(
-                station_id=station_id, start=data["start"], end=data["end"]
+                noaa_manager=noaa_manager,
+                station_id=station_id,
+                start=data["start"],
+                end=data["end"],
             )
+
+            with open(f"noaa_response_{station_id}.json", "w") as f:
+                json.dump(noaa_response, f)
 
             if noaa_response:
                 logger.info(f"Loading observations for station: {station_id}")

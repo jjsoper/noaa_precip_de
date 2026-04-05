@@ -4,8 +4,6 @@ import logging
 
 from rich.logging import RichHandler
 
-from src import settings
-
 
 class JSONPrettyFilter(logging.Filter):
     """
@@ -39,7 +37,9 @@ def _configured() -> bool:
     return any(isinstance(h, RichHandler) for h in logging.root.handlers)
 
 
-def get_logger(name: str = None) -> logging.Logger:
+def get_logger(
+    name: str = None, log_level: str = "INFO", log_format: str = None
+) -> logging.Logger:
     """
     Return a logger configured with RichHandler and colorized level styles.
     Safe to call multiple times; handler added once.
@@ -49,13 +49,13 @@ def get_logger(name: str = None) -> logging.Logger:
         handler.addFilter(JSONPrettyFilter())
 
         # optional: keep a concise formatter for non-rich consumers
-        try:
-            fmt = settings.LOG_FORMAT
-        except Exception:
+        if log_format:
+            fmt = log_format
+        else:
             fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         handler.setFormatter(logging.Formatter(fmt))
 
-        logging.root.setLevel(getattr(logging, getattr(settings, "LOG_LEVEL", "INFO")))
+        logging.root.setLevel(log_level)
         logging.root.addHandler(handler)
 
     return logging.getLogger(name)

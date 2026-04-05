@@ -1,11 +1,9 @@
-import json
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
 from google.cloud.bigquery.job import LoadJob
 
-from src import settings
 from src.logging.custom_logger import get_logger
 from src.managers.bigquery_manager import BigQueryManager
 
@@ -46,7 +44,7 @@ def load_bronze_precip_raw_noaa_station_observations(
     records = [
         {
             "_record_id": str(uuid.uuid4()),
-            "raw_response_json": json.dumps(record),
+            "raw_response_json": record,
             "_job_id": job_id,
             "_event_id": event_id,
             # INSERT statements won't honor default timestamps, so we need to set these here

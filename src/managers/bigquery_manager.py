@@ -1,12 +1,9 @@
-import json
-import uuid
-from datetime import datetime
 from typing import Any
 
 from google.cloud import bigquery
 from google.cloud.bigquery.job import LoadJob, QueryJob
 
-from src import settings
+from src.bronze_noaa_station import settings
 from src.logging.custom_logger import get_logger
 
 logger = get_logger()

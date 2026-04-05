@@ -4,11 +4,10 @@ from typing import Any
 from src.managers.noaa_api_manager import NOAAWeatherManager
 
 logger = logging.getLogger(__name__)
-noaa_manager = NOAAWeatherManager()
 
 
 def extract_noaa_observations(
-    station_id: list[str], start: str, end: str
+    noaa_manager: NOAAWeatherManager, station_id: list[str], start: str, end: str
 ) -> dict[str, Any]:
 
     try:
