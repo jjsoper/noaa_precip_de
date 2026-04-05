@@ -9,5 +9,4 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 # GCP
 PROJECT = os.environ["PROJECT"]
 DATASET = os.environ["DATASET"]
-TABLE = os.environ["TABLE"]
 BUCKET = os.environ["BUCKET"]
