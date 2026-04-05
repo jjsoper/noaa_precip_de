@@ -3,19 +3,21 @@ import uuid
 
 from flask import Flask, request
 
-from src import extract, load
+from src import extract, load, settings
 from src.logging.custom_logger import get_logger
+from src.managers.bigquery_manager import BigQueryManager
 
 logger = get_logger()
+bigquery_manager = BigQueryManager(project=settings.PROJECT, dataset=settings.DATASET)
 
 app = Flask(__name__)
 
 
 @app.route("/", methods=["POST"])
 def main(test_payload: dict = None):
-    job_id = str(uuid.uuid4())
     event_id = str(uuid.uuid4())
-    
+    job_id = event_id  # for now, we will set these equal
+
     logger.info(f"Starting Precipitation Data Extraction/Load (job_id={job_id})")
 
     if test_payload:
@@ -36,28 +38,31 @@ def main(test_payload: dict = None):
 
     try:
         total_records_loaded = 0
-        
         for station_id in data["station_ids"]:
             logger.info(f"Extracting observations for station: {station_id}")
             noaa_response = extract.extract_noaa_observations(
                 station_id=station_id, start=data["start"], end=data["end"]
             )
-            
+
             if noaa_response:
                 logger.info(f"Loading observations for station: {station_id}")
-                load_job = load.load_noaa_observations(
-                    raw_response=noaa_response,
+                raw_records = noaa_response["features"]
+                table = "raw_noaa_station_observations"
+                load_job = load.load_bronze_precip_raw_noaa_station_observations(
+                    bigquery_manager=bigquery_manager,
+                    table=table,
+                    raw_records=raw_records,
                     job_id=job_id,
                     event_id=event_id,
                 )
-                if load_job:
-                    total_records_loaded += load_job.output_rows
-        
+
+                total_records_loaded += load_job.output_rows
+
         logger.info(
             f"Successfully completed extraction/load "
             f"(job_id={job_id}, total_records={total_records_loaded})"
         )
-        
+
         return {
             "status": "success",
             "job_id": job_id,

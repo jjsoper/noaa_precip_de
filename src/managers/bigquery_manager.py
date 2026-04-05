@@ -24,8 +24,9 @@ class BigQueryManager:
 
     def __init__(
         self,
-        client: bigquery.Client,
+        project: str,
         dataset: str,
+        client: bigquery.Client = None,
     ):
         """
         Initialize the BigQuery manager.
@@ -35,9 +36,11 @@ class BigQueryManager:
             project: Project ID for operations.
             dataset: Dataset name for operations.
         """
-        self.client = client
-        self.project = client.project
+
+        self.project = project
         self.dataset = dataset
+        if not client:
+            self.client = bigquery.Client(project=project)
 
     def _get_fully_qualified_table_path(self, table: str) -> str:
         """
