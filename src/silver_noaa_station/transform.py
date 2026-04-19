@@ -1,5 +1,3 @@
-import uuid
-
 from src.managers.bigquery_manager import BigQueryManager
 
 
