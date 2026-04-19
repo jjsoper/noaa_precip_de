@@ -7,4 +7,5 @@ LOG_LEVEL = "DEBUG"
 
 # GCP
 PROJECT = os.environ["PROJECT"]
-DATASET = os.environ["BRONZE_DATASET"]
+BRONZE_DATASET = os.environ["BRONZE_DATASET"]
+SILVER_DATASET = os.environ["SILVER_DATASET"]

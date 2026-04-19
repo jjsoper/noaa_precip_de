@@ -169,7 +169,7 @@ if __name__ == "__main__":
     # Example usage
     bq_manager = BigQueryManager(
         client=bigquery.Client(project=settings.PROJECT),
-        dataset=settings.DATASET,
+        dataset=settings.BRONZE_DATASET,
     )
 
     table = "raw_noaa_station_observations"
