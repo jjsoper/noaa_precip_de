@@ -1,8 +1,6 @@
 import json
 import uuid
 
-from flask import Flask, request
-
 from src.bronze_noaa_station import extract, load, settings
 from src.logging.custom_logger import get_logger
 from src.managers.bigquery_manager import BigQueryManager
@@ -12,45 +10,23 @@ logger = get_logger()
 bigquery_manager = BigQueryManager(project=settings.PROJECT, dataset=settings.DATASET)
 noaa_manager = NOAAWeatherManager()
 
-app = Flask(__name__)
 
-
-@app.route("/", methods=["POST"])
-def main(test_payload: dict = None):
-    event_id = str(uuid.uuid4())
-    job_id = event_id  # for now, we will set these equal
+def main(station_ids: list[str], start: str, end: str):
+    trace_id = str(uuid.uuid4())
+    job_id = trace_id  # for now, we will set these equal
 
     logger.info(f"Starting Precipitation Data Extraction/Load (job_id={job_id})")
 
-    if test_payload:
-        data = test_payload
-    else:
-        data = request.get_json()
-
-    if not data:
-        logger.error("No payload received")
-        return {"error": "No payload received"}, 400
-
-    logger.info(f"Received payload: {json.dumps(data)}")
-
-    if "station_ids" not in data or "start" not in data or "end" not in data:
-        m = "Missing required fields: station_ids, start, end"
-        logger.error(m)
-        return {"error": m}, 400
-
     try:
         total_records_loaded = 0
-        for station_id in data["station_ids"]:
+        for station_id in station_ids:
             logger.info(f"Extracting observations for station: {station_id}")
             noaa_response = extract.extract_noaa_observations(
                 noaa_manager=noaa_manager,
                 station_id=station_id,
-                start=data["start"],
-                end=data["end"],
+                start=start,
+                end=end,
             )
-
-            with open(f"noaa_response_{station_id}.json", "w") as f:
-                json.dump(noaa_response, f)
 
             if noaa_response:
                 logger.info(f"Loading observations for station: {station_id}")
@@ -61,7 +37,7 @@ def main(test_payload: dict = None):
                     table=table,
                     raw_records=raw_records,
                     job_id=job_id,
-                    event_id=event_id,
+                    trace_id=trace_id,
                 )
 
                 total_records_loaded += load_job.output_rows
@@ -74,7 +50,7 @@ def main(test_payload: dict = None):
         return {
             "status": "success",
             "job_id": job_id,
-            "event_id": event_id,
+            "trace_id": trace_id,
             "total_records_loaded": total_records_loaded,
         }, 200
 
@@ -87,7 +63,7 @@ def main(test_payload: dict = None):
 if __name__ == "__main__":
     test_payload = {
         "station_ids": ["KBOS"],
-        "start": "2026-04-01T17:40:00+00:00",
-        "end": "2026-04-02T17:40:00+00:00",
+        "start": "2026-04-18T17:40:00+00:00",
+        "end": "2026-04-19T17:40:00+00:00",
     }
     main(test_payload)
