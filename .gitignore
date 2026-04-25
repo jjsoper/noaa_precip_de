@@ -211,3 +211,6 @@ __marimo__/
 
 
 _archive
+logs
+plugins
+config
