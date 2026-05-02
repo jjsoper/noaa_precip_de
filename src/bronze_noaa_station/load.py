@@ -1,21 +1,22 @@
+import json
+import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any
 
+from google.cloud import storage
 from google.cloud.bigquery.job import LoadJob
 
-from src.logging.custom_logger import get_logger
+from src.bronze_noaa_station import settings
 from src.managers.bigquery_manager import BigQueryManager
 
-logger = get_logger()
+logger = logging.getLogger(__name__)
+storage_client = storage.Client()
+bucket = storage_client.bucket(settings.BUCKET)
+bigquery_manager = BigQueryManager(project=settings.PROJECT, dataset=settings.DATASET)
 
 
 def load_bronze_precip_raw_noaa_station_observations(
-    bigquery_manager: BigQueryManager,
-    table: str,
-    raw_records: list[dict[str, Any]],
-    job_id: str,
-    trace_id: str,
+    blob_name: str,
 ) -> LoadJob:
     """
     Load raw NOAA station observations into the bronze BigQuery table.
@@ -27,9 +28,7 @@ def load_bronze_precip_raw_noaa_station_observations(
     Args:
         bigquery_manager: An instance of BigQueryManager for performing operations
         table: The name of the BigQuery table to load data into (not a fully qualified table path)
-        raw_records: List of raw records from the NOAA API containing observations
-        job_id: ID of the data ingestion job
-        trace_id: ID of the trace that triggered the job.
+        blob_name: Name of the GCS blob containing raw NOAA station observations
 
     Returns:
         LoadJob: The BigQuery load job
@@ -38,8 +37,19 @@ def load_bronze_precip_raw_noaa_station_observations(
         ValueError: If raw_response is empty or invalid
         google.cloud.exceptions.GoogleCloudError: If BigQuery operation fails
     """
-    if not raw_records:
-        raise ValueError("raw_response cannot be empty")
+    job_id = str(uuid.uuid4())
+
+    # extract records from GCS blob
+    logger.info(f"Reading observations from GCS blob: {blob_name}")
+    blob = bucket.blob(blob_name)
+    raw_response_str = blob.download_as_string()
+    raw_response = json.loads(raw_response_str)
+
+    # extract relevant content from response
+    trace_id = raw_response["trace_id"]
+    raw_records = raw_response["observations"]["features"]
+
+    total_records_loaded = 0
 
     records = [
         {
@@ -54,8 +64,11 @@ def load_bronze_precip_raw_noaa_station_observations(
         for record in raw_records
     ]
 
-    return bigquery_manager.load_from_json(
+    load_job = bigquery_manager.load_from_json(
         records=records,
-        table=table,
+        table=settings.TABLE,
         write_disposition="WRITE_APPEND",
     )
+
+    total_records_loaded += load_job.output_rows
+    logger.info(f"Successfully completed load total_records={total_records_loaded}")
