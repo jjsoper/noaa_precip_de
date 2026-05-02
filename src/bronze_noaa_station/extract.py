@@ -2,6 +2,7 @@ import json
 import logging
 import uuid
 
+import pendulum
 from google.cloud import storage
 
 from src.bronze_noaa_station import settings
@@ -47,16 +48,22 @@ def extract_noaa_observations(
     blob = bucket.blob(blob_name)
     blob.upload_from_string(json.dumps(station_observations_with_meta))
 
-    logger.info(f"Successfully extracted observations for station: {station_id}")
+    logger.info(
+        f"Successfully extracted observations for station: {station_id}. Loaded to GCS at: {blob_name}"
+    )
 
     return blob_name
 
 
 if __name__ == "__main__":
-    test_args = {
-        "station_id": "KBOS",
-        "trace_id": str(uuid.uuid4()),
-        "start": "2026-04-23T17:40:00+00:00",
-        "end": "2026-04-24T17:40:00+00:00",
-    }
-    extract_noaa_observations(**test_args)
+    from src.logging.custom_logger import get_logger
+
+    logger = get_logger()
+    start = pendulum.now().subtract(days=1).to_iso8601_string()
+    end = pendulum.now().to_iso8601_string()
+    blob_name = extract_noaa_observations(
+        station_id="KBOS",
+        start=start,
+        end=end,
+        trace_id=str(uuid.uuid4()),
+    )
