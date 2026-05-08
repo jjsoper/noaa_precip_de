@@ -11,13 +11,8 @@ from src.managers.noaa_api_manager import NOAAWeatherManager
 logger = logging.getLogger(__name__)
 
 
-storage_client = storage.Client()
-bucket = storage_client.bucket(settings.BUCKET)
-noaa_manager = NOAAWeatherManager()
-
-
 def extract_noaa_observations(
-    station_id: str, start: str, end: str, trace_id: str
+    station_id: str, start: str, end: str, trace_id: str, job_id: str
 ) -> str:
     """Extract NOAA observations and write to GCS
 
@@ -25,13 +20,15 @@ def extract_noaa_observations(
         station_id (str): ID of the station to extract observations for
         start (str): Start date for observations in ISO format (e.g. "2026-01-01T00:00:00+00:00")
         end (str): End date for observations in ISO format (e.g. "2026-01-31T23:59:59+00:00")
-        trace_id (str): Trace ID for observability
+        trace_id (str): Trace ID for observability (airflow task )
+        job_id (str): Job ID for tracking
 
     Returns:
         str: GCS bucket file path
     """
-
-    job_id = str(uuid.uuid4())
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(settings.BUCKET)
+    noaa_manager = NOAAWeatherManager()
 
     response = noaa_manager.fetch_observations(
         station_id=station_id,

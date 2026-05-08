@@ -10,14 +10,11 @@ from src.bronze_noaa_station import settings
 from src.managers.bigquery_manager import BigQueryManager
 
 logger = logging.getLogger(__name__)
-storage_client = storage.Client()
-bucket = storage_client.bucket(settings.BUCKET)
-bigquery_manager = BigQueryManager(project=settings.PROJECT, dataset=settings.DATASET)
 
 
 def load_bronze_precip_raw_noaa_station_observations(
     blob_name: str,
-) -> LoadJob:
+):
     """
     Load raw NOAA station observations into the bronze BigQuery table.
 
@@ -30,13 +27,14 @@ def load_bronze_precip_raw_noaa_station_observations(
         table: The name of the BigQuery table to load data into (not a fully qualified table path)
         blob_name: Name of the GCS blob containing raw NOAA station observations
 
-    Returns:
-        LoadJob: The BigQuery load job
-
     Raises:
         ValueError: If raw_response is empty or invalid
         google.cloud.exceptions.GoogleCloudError: If BigQuery operation fails
     """
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(settings.BUCKET)
+    bigquery_manager = BigQueryManager(project=settings.PROJECT, dataset=settings.DATASET)
+
     job_id = str(uuid.uuid4())
 
     # extract records from GCS blob
