@@ -1,8 +1,6 @@
 import uuid
 
-import pendulum
 from airflow.sdk import dag, task
-from airflow.sdk.definitions import get_current_context
 
 from src.bronze_noaa_station.extract import extract_noaa_observations
 from src.bronze_noaa_station.load import (
